@@ -28,6 +28,11 @@ class Program
         var links = GetLinks("https://en.wikipedia.org/wiki/Dark_triad");
         foreach (var link in links)
             Console.WriteLine(link);
+        HttpClient httpClient = new HttpClient();
+        var jsonResponse = GetSync(httpClient,
+            "https://en.wikipedia.org/w/api.php?action=query&list=categorymembers&cmtitle=Category:Psychology&format=json&cmlimit=500&cmprop=title");
+        Console.WriteLine($"{jsonResponse}\n");
+        Console.WriteLine("END");
     }
 
     public HtmlDocument GetDocument(string url)
@@ -54,5 +59,13 @@ class Program
             links.Add(new Uri(baseUri, href).AbsoluteUri);
         }
         return links;
+    }
+
+    public string GetSync(HttpClient httpClient, string uri)
+    {
+        HttpResponseMessage response = httpClient.GetAsync(uri).Result;
+        response.EnsureSuccessStatusCode();
+        var jsonResponse = response.Content.ReadAsStringAsync().Result;
+        return jsonResponse;
     }
 }
