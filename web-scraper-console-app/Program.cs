@@ -2,6 +2,8 @@
 using System.Text;
 using System.Diagnostics;
 using HtmlAgilityPack;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 class Program
 {
@@ -29,9 +31,13 @@ class Program
         foreach (var link in links)
             Console.WriteLine(link);
         HttpClient httpClient = new HttpClient();
-        var jsonResponse = GetSync(httpClient,
-            "https://en.wikipedia.org/w/api.php?action=query&list=categorymembers&cmtitle=Category:Psychology&format=json&cmlimit=500&cmprop=title");
-        Console.WriteLine($"{jsonResponse}\n");
+        //Console.WriteLine($"{jObject["query"]["categorymembers"].ToString()}\n");
+        //Console.WriteLine($"{jsonResponse}\n");
+        var pages = GetCategoryPages(httpClient, "Category:Psychology", 1);
+        foreach (var page in pages)
+        {
+            Console.WriteLine(page);
+        }
         Console.WriteLine("END");
     }
 
@@ -59,6 +65,19 @@ class Program
             links.Add(new Uri(baseUri, href).AbsoluteUri);
         }
         return links;
+    }
+
+    public List<string> GetCategoryPages(HttpClient httpClient, string uri, int depth = 0)
+    {
+        var pages = new List<string>();
+        var jsonResponse = GetSync(httpClient,
+            $"https://en.wikipedia.org/w/api.php?action=query&list=categorymembers&cmtitle={uri}&format=json&cmlimit=500&cmprop=title");
+        var jObject = JObject.Parse(jsonResponse);
+        foreach (var page in jObject["query"]["categorymembers"])
+        {
+            pages.Add((string)page["title"]);
+        }
+        return pages;
     }
 
     public string GetSync(HttpClient httpClient, string uri)

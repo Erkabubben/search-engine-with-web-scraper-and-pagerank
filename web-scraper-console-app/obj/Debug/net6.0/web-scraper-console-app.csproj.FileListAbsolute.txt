@@ -16,3 +16,5 @@ D:\Filarkivet\Kurser\2DV515 - Web Intelligence\project\web-scraper-console-app\o
 D:\Filarkivet\Kurser\2DV515 - Web Intelligence\project\web-scraper-console-app\obj\Debug\net6.0\ref\web-scraper-console-app.dll
 D:\Filarkivet\Kurser\2DV515 - Web Intelligence\project\web-scraper-console-app\obj\Debug\net6.0\web-scraper-console-app.pdb
 D:\Filarkivet\Kurser\2DV515 - Web Intelligence\project\web-scraper-console-app\obj\Debug\net6.0\web-scraper-console-app.genruntimeconfig.cache
+D:\Filarkivet\Kurser\2DV515 - Web Intelligence\project\web-scraper-console-app\bin\Debug\net6.0\Newtonsoft.Json.dll
+D:\Filarkivet\Kurser\2DV515 - Web Intelligence\project\web-scraper-console-app\bin\Debug\net6.0\Newtonsoft.Json.Schema.dll

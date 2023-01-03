@@ -1,11 +1,13 @@
 {
   "version": 2,
-  "dgSpecHash": "suA4O5lTdaOIwMLd+KepFM19fPr5LTmBBZNMwIO73fpxS2GGCzvxEE1ieDgeXG6jhZ9WfyiUDmo5A8yu5iBJSA==",
+  "dgSpecHash": "BsqgcxFSp/3o5wGesUo9rgvcDY74AjdNXzgxigmZXuDPF9ndqoCQaJYpB2MYNlWVVzdiEsqLlVjKtRcNsLckhQ==",
   "success": true,
   "projectFilePath": "D:\\Filarkivet\\Kurser\\2DV515 - Web Intelligence\\project\\web-scraper-console-app\\web-scraper-console-app.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\MSI\\.nuget\\packages\\csvhelper\\30.0.1\\csvhelper.30.0.1.nupkg.sha512",
-    "C:\\Users\\MSI\\.nuget\\packages\\htmlagilitypack\\1.11.46\\htmlagilitypack.1.11.46.nupkg.sha512"
+    "C:\\Users\\MSI\\.nuget\\packages\\htmlagilitypack\\1.11.46\\htmlagilitypack.1.11.46.nupkg.sha512",
+    "C:\\Users\\MSI\\.nuget\\packages\\newtonsoft.json\\13.0.2\\newtonsoft.json.13.0.2.nupkg.sha512",
+    "C:\\Users\\MSI\\.nuget\\packages\\newtonsoft.json.schema\\3.0.14\\newtonsoft.json.schema.3.0.14.nupkg.sha512"
   ],
   "logs": []
 }
