@@ -4,6 +4,7 @@ using System.Diagnostics;
 using HtmlAgilityPack;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using System.Text.RegularExpressions;
 
 class Program
 {
@@ -27,21 +28,44 @@ class Program
 
     public Program(string[] args)
     {
-        var testdoc = GetDocument("https://en.wikipedia.org/wiki/Dark_triad");
-        //Console.WriteLine(testdoc.Text);
-        var links = GetLinks("https://en.wikipedia.org/wiki/Dark_triad");
+        var baseUrl = "https://en.wikipedia.org/wiki/";
+        var testdoc = GetDocument(baseUrl + "Dark_triad");
+        Console.WriteLine(GetWords(testdoc.DocumentNode));
+        var links = GetLinks(baseUrl + "Dark_triad");
         foreach (var link in links)
             Console.WriteLine(link);
         _httpClient = new HttpClient();
         //Console.WriteLine($"{jObject["query"]["categorymembers"].ToString()}\n");
         //Console.WriteLine($"{jsonResponse}\n");
-        _pagesGathered = 0;
+        /*_pagesGathered = 0;
         var pages = GetCategoryPages(new List<string>(), "Category:Psychology", 2000, 1);
         _pagesGathered = 0;
         foreach (var page in pages)
             Console.WriteLine(page);
 
         Console.WriteLine("Amount of pages: " + pages.Count);
+        Console.WriteLine(GetDocument(baseUrl + pages[0]).Text);*/
+    }
+
+    private string GetWords(HtmlNode documentNode)
+    {
+        void GetInnerHTMLFromChildNodes(StringBuilder sb, HtmlNode node)
+        {
+            foreach (var childNode in node.ChildNodes)
+            {
+                if (childNode.InnerText != null)
+                {
+                    var innerText = Regex.Replace(childNode.InnerText.ToLower(), "[^a-zA-Z0-9 ]", "");
+                    innerText = Regex.Replace(innerText, @"\s+", " ");
+                    sb.Append(innerText);
+                }
+                //GetInnerHTMLFromChildNodes(sb, node);
+            }
+        }
+
+        StringBuilder sb = new StringBuilder();
+        GetInnerHTMLFromChildNodes(sb, documentNode);
+        return sb.ToString();
     }
 
     public HtmlDocument GetDocument(string url)
