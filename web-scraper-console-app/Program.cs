@@ -17,6 +17,8 @@ class Program
     }
 
     private static Program? _instance;
+    private HttpClient _httpClient;
+    private int _pagesGathered = 0;
 
     static void Main(string[] args)
     {
@@ -30,15 +32,16 @@ class Program
         var links = GetLinks("https://en.wikipedia.org/wiki/Dark_triad");
         foreach (var link in links)
             Console.WriteLine(link);
-        HttpClient httpClient = new HttpClient();
+        _httpClient = new HttpClient();
         //Console.WriteLine($"{jObject["query"]["categorymembers"].ToString()}\n");
         //Console.WriteLine($"{jsonResponse}\n");
-        var pages = GetCategoryPages(httpClient, "Category:Psychology", 1);
+        _pagesGathered = 0;
+        var pages = GetCategoryPages(new List<string>(), "Category:Psychology", 2000, 1);
+        _pagesGathered = 0;
         foreach (var page in pages)
-        {
             Console.WriteLine(page);
-        }
-        Console.WriteLine("END");
+
+        Console.WriteLine("Amount of pages: " + pages.Count);
     }
 
     public HtmlDocument GetDocument(string url)
@@ -67,22 +70,36 @@ class Program
         return links;
     }
 
-    public List<string> GetCategoryPages(HttpClient httpClient, string uri, int depth = 0)
+    public List<string> GetCategoryPages(List<string> pagesList, string uri, int maxPages = 1000, int depth = 1)
     {
-        var pages = new List<string>();
-        var jsonResponse = GetSync(httpClient,
-            $"https://en.wikipedia.org/w/api.php?action=query&list=categorymembers&cmtitle={uri}&format=json&cmlimit=500&cmprop=title");
+        if (_pagesGathered >= maxPages)
+            return pagesList;
+
+        var fullUri = $"https://en.wikipedia.org/w/api.php?action=query&list=categorymembers&cmtitle=" +
+            $"{uri}&format=json&cmlimit=500&cmprop=title";
+        var jsonResponse = GetSync(fullUri);
         var jObject = JObject.Parse(jsonResponse);
         foreach (var page in jObject["query"]["categorymembers"])
         {
-            pages.Add((string)page["title"]);
+            string pageTitle = (string)page["title"];
+            if (!pageTitle.StartsWith("Category:") && !pageTitle.StartsWith("Portal:"))
+            {
+                if (_pagesGathered >= maxPages)
+                    return pagesList;
+
+                pagesList.Add(pageTitle);
+                _pagesGathered++;
+            }
+            else if (pageTitle.StartsWith("Category:") && depth > 0)
+                GetCategoryPages(pagesList, pageTitle, maxPages, depth - 1);
         }
-        return pages;
+        return pagesList;
     }
 
-    public string GetSync(HttpClient httpClient, string uri)
+    public string GetSync(string uri)
     {
-        HttpResponseMessage response = httpClient.GetAsync(uri).Result;
+        Console.WriteLine($"GET: {uri}");
+        HttpResponseMessage response = _httpClient.GetAsync(uri).Result;
         response.EnsureSuccessStatusCode();
         var jsonResponse = response.Content.ReadAsStringAsync().Result;
         return jsonResponse;
