@@ -48,6 +48,11 @@ class Program
         Console.WriteLine(GetDocument(baseUrl + pages[0]).Text);*/
     }
 
+    private void CreateLinksAndWordsCollectionsFromLinksList(string collectionName, List<string> linksList, string baseUrl)
+    {
+        
+    }
+
     private string GetWordsFromContentNode(HtmlNode contentNode)
     {
         string RemoveSpaces(string text) => Regex.Replace(text, @"\s+", " ");
@@ -56,25 +61,12 @@ class Program
 
         void GetInnerHTMLFromChildNodes(StringBuilder sb, HtmlNode node)
         {
-            /*if (!node.HasChildNodes)
+            if (node.InnerText == null)
                 return;
 
-            foreach (var childNode in node.ChildNodes)
-            {
-                if (childNode.InnerText != null)
-                {
-                    var text = ReplaceSpecialCharactersWithSpaces(childNode.InnerText.ToLower());
-                    text = RemoveSpaces(text);
-                    sb.Append(text.Trim() + " ");
-                }
-            }*/
-
-            if (node.InnerText != null)
-            {
-                var text = ReplaceSpecialCharactersWithSpaces(node.InnerText.ToLower());
-                text = RemoveSpaces(text);
-                sb.Append(text.Trim() + " ");
-            }
+            var text = ReplaceSpecialCharactersWithSpaces(node.InnerText.ToLower());
+            text = RemoveSpaces(text);
+            sb.Append(text.Trim() + " ");
         }
 
         StringBuilder sb = new StringBuilder();
@@ -91,14 +83,14 @@ class Program
         return nodes[0];
     }
 
-    public HtmlDocument GetDocument(string url)
+    private HtmlDocument GetDocument(string url)
     {
         HtmlWeb web = new HtmlWeb();
         HtmlDocument doc = web.Load(url);
         return doc;
     }
 
-    public List<string> GetWikipediaLinksFromContentNode(HtmlNode contentNode)
+    private List<string> GetWikipediaLinksFromContentNode(HtmlNode contentNode)
     {
         var nodes = contentNode.SelectNodes("//a");
         var links = new List<string>();
@@ -121,7 +113,7 @@ class Program
         return links;
     }
 
-    public List<string> GetWikipediaLinksFromContentNode0(string url)
+    private List<string> GetWikipediaLinksFromContentNode0(string url)
     {
         var doc = GetDocument(url);
         HtmlNodeCollection nodes = doc.DocumentNode.SelectNodes("//a");
@@ -147,7 +139,7 @@ class Program
         return links;
     }
 
-    public List<string> GetWikipediaCategoryPages(List<string> pagesList, string uri, int maxPages = 1000, int depth = 1)
+    private List<string> GetWikipediaCategoryPages(List<string> pagesList, string uri, int maxPages = 1000, int depth = 1)
     {
         if (_pagesGathered >= maxPages)
             return pagesList;
@@ -173,7 +165,7 @@ class Program
         return pagesList;
     }
 
-    public string GetSync(string uri)
+    private string GetSync(string uri)
     {
         Console.WriteLine($"GET: {uri}");
         HttpResponseMessage response = _httpClient.GetAsync(uri).Result;
