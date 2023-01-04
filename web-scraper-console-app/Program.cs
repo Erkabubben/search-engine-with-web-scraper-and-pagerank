@@ -29,9 +29,10 @@ class Program
     public Program(string[] args)
     {
         var baseUrl = "https://en.wikipedia.org/wiki/";
-        var testdoc = GetDocument(baseUrl + "Dark_triad");
-        Console.WriteLine(GetWords(testdoc.DocumentNode));
-        var links = GetLinks(baseUrl + "Dark_triad");
+        //var testdoc = GetDocument(baseUrl + "Dark_triad");
+        var testContentNode = GetWikipediaContentNode(baseUrl + "Dark_triad");
+        Console.WriteLine(GetWordsFromContentNode(testContentNode));
+        var links = GetWikipediaLinksFromContentNode(testContentNode);
         foreach (var link in links)
             Console.WriteLine(link);
         _httpClient = new HttpClient();
@@ -47,25 +48,47 @@ class Program
         Console.WriteLine(GetDocument(baseUrl + pages[0]).Text);*/
     }
 
-    private string GetWords(HtmlNode documentNode)
+    private string GetWordsFromContentNode(HtmlNode contentNode)
     {
+        string RemoveSpaces(string text) => Regex.Replace(text, @"\s+", " ");
+        string ReplaceSpecialCharactersWithSpaces(string text) =>
+            Regex.Replace(text, "[^a-zA-Z0-9 ]", " ");
+
         void GetInnerHTMLFromChildNodes(StringBuilder sb, HtmlNode node)
         {
+            /*if (!node.HasChildNodes)
+                return;
+
             foreach (var childNode in node.ChildNodes)
             {
                 if (childNode.InnerText != null)
                 {
-                    var innerText = Regex.Replace(childNode.InnerText.ToLower(), "[^a-zA-Z0-9 ]", "");
-                    innerText = Regex.Replace(innerText, @"\s+", " ");
-                    sb.Append(innerText);
+                    var text = ReplaceSpecialCharactersWithSpaces(childNode.InnerText.ToLower());
+                    text = RemoveSpaces(text);
+                    sb.Append(text.Trim() + " ");
                 }
-                //GetInnerHTMLFromChildNodes(sb, node);
+            }*/
+
+            if (node.InnerText != null)
+            {
+                var text = ReplaceSpecialCharactersWithSpaces(node.InnerText.ToLower());
+                text = RemoveSpaces(text);
+                sb.Append(text.Trim() + " ");
             }
         }
 
         StringBuilder sb = new StringBuilder();
-        GetInnerHTMLFromChildNodes(sb, documentNode);
-        return sb.ToString();
+        GetInnerHTMLFromChildNodes(sb, contentNode);
+        while (sb[0] == ' ')
+            sb.Remove(0, 1);
+        return RemoveSpaces(sb.ToString());
+    }
+
+    private HtmlNode GetWikipediaContentNode(string url)
+    {
+        var doc = GetDocument(url);
+        HtmlNodeCollection nodes = doc.DocumentNode.SelectNodes("//body/div[@id='content']");
+        return nodes[0];
     }
 
     public HtmlDocument GetDocument(string url)
@@ -75,7 +98,30 @@ class Program
         return doc;
     }
 
-    public List<string> GetLinks(string url)
+    public List<string> GetWikipediaLinksFromContentNode(HtmlNode contentNode)
+    {
+        var nodes = contentNode.SelectNodes("//a");
+        var links = new List<string>();
+        if (nodes == null)
+            return links;
+
+        foreach (var node in nodes)
+        {
+            if (!node.Attributes.Contains("href"))
+                continue;
+            string href = node.Attributes[name: "href"].Value;
+            if (!href.StartsWith("/wiki/") || href.Contains(':'))
+                continue;
+
+            if (href.Contains('#'))
+                href = href.Split('#')[0];
+
+            links.Add(href);
+        }
+        return links;
+    }
+
+    public List<string> GetWikipediaLinksFromContentNode0(string url)
     {
         var doc = GetDocument(url);
         HtmlNodeCollection nodes = doc.DocumentNode.SelectNodes("//a");
@@ -83,18 +129,25 @@ class Program
         if (nodes == null)
             return links;
 
-        var baseUri = new Uri(uriString: url);
+        //var baseUri = new Uri(uriString: url);
         foreach (var node in nodes)
         {
             if (!node.Attributes.Contains("href"))
                 continue;
             string href = node.Attributes[name: "href"].Value;
-            links.Add(new Uri(baseUri, href).AbsoluteUri);
+            //links.Add(new Uri(baseUri, href).AbsoluteUri);
+            if (!href.StartsWith("/wiki/") || href.Contains(':'))
+                continue;
+
+            if (href.Contains('#'))
+                href = href.Split('#')[0];
+
+            links.Add(href);
         }
         return links;
     }
 
-    public List<string> GetCategoryPages(List<string> pagesList, string uri, int maxPages = 1000, int depth = 1)
+    public List<string> GetWikipediaCategoryPages(List<string> pagesList, string uri, int maxPages = 1000, int depth = 1)
     {
         if (_pagesGathered >= maxPages)
             return pagesList;
@@ -115,7 +168,7 @@ class Program
                 _pagesGathered++;
             }
             else if (pageTitle.StartsWith("Category:") && depth > 0)
-                GetCategoryPages(pagesList, pageTitle, maxPages, depth - 1);
+                GetWikipediaCategoryPages(pagesList, pageTitle, maxPages, depth - 1);
         }
         return pagesList;
     }
