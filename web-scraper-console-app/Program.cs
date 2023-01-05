@@ -20,7 +20,7 @@ class Program
     private static Program? _instance;
     private HttpClient _httpClient;
     private int _pagesGathered = 0;
-    private string _baseUrl = "https://en.wikipedia.org/wiki/";
+    private string _baseUrl = "https://en.wikipedia.org/";
 
     static void Main(string[] args)
     {
@@ -30,13 +30,14 @@ class Program
     public Program(string[] args)
     {
         //var testdoc = GetDocument(baseUrl + "Dark_triad");
-        var testContentNode = GetWikipediaContentNode(_baseUrl + "Dark_triad");
+        _httpClient = new HttpClient();
+        /*var testContentNode = GetWikipediaContentNode(_baseUrl + "wiki/" + "Dark_triad");
         Console.WriteLine(GetWordsFromContentNode(testContentNode));
         var links = GetWikipediaLinksFromContentNode(testContentNode);
         Console.WriteLine("Amount of links: " + links.Count);
         foreach (var link in links)
-            Console.WriteLine(link);
-        _httpClient = new HttpClient();
+            Console.WriteLine(link);*/
+        
         //Console.WriteLine($"{jObject["query"]["categorymembers"].ToString()}\n");
         //Console.WriteLine($"{jsonResponse}\n");
         /*_pagesGathered = 0;
@@ -47,25 +48,40 @@ class Program
 
         Console.WriteLine("Amount of pages: " + pages.Count);
         Console.WriteLine(GetDocument(baseUrl + pages[0]).Text);*/
+        CreateLinksAndWordsCollectionsFromPage("Dark triad", "Dark_triad", -1);
     }
 
-    private void CreateLinksAndWordsCollectionsFromLinksList(string collectionName, List<string> linksList)
+    private void CreateLinksAndWordsCollectionsFromPage(string collectionName, string pageUrl, int maxPages = -1)
     {
-        var startPageContentNode = GetWikipediaContentNode(_baseUrl + "Dark_triad");
+        var startPageContentNode = GetWikipediaContentNode(_baseUrl +"wiki/" + pageUrl);
         if (startPageContentNode == null)
             return;
 
-        var wordsFolder = appFolderPath + @$"\datasets\wikipedia\Words";
-        var linksFolder = appFolderPath + @$"\datasets\wikipedia\Links";
-        if (!Directory.Exists(wordsFolder))
-            Directory.CreateDirectory(wordsFolder);
-        if (!Directory.Exists(linksFolder))
-            Directory.CreateDirectory(linksFolder);
+        var wordsFolder = appFolderPath + @$"\datasets\wikipedia\Words\" + collectionName;
+        var linksFolder = appFolderPath + @$"\datasets\wikipedia\Links\" + collectionName;
+        if (Directory.Exists(wordsFolder))
+            Directory.Delete(wordsFolder, true);
+        Directory.CreateDirectory(wordsFolder);
+        if (Directory.Exists(linksFolder))
+            Directory.Delete(linksFolder, true);
+        Directory.CreateDirectory(linksFolder);
 
-        foreach (var link in linksList)
+        var startPageLinksList = GetWikipediaLinksFromContentNode(startPageContentNode);
+
+        int currentPageID = 0;
+        foreach (var link in startPageLinksList)
         {
-            var links = GetWikipediaLinksFromContentNode(startPageContentNode);
-
+            var pageContentNode = GetWikipediaContentNode(_baseUrl + link);
+            var wordsString = GetWordsFromContentNode(pageContentNode);
+            var links = GetWikipediaLinksFromContentNode(pageContentNode);
+            string linksString = string.Join("\n", links);
+            string filename = link.StartsWith("/wiki/") ? link.Substring("/wiki/".Length) : link;
+            //filename = Regex.Replace(filename, "[^a-zA-Z0-9 _]", " ");
+            File.WriteAllText(wordsFolder + '\\' + filename, wordsString);
+            File.WriteAllText(linksFolder + '\\' + filename, linksString);
+            currentPageID++;
+            if (maxPages > -1 && currentPageID > maxPages)
+                break;
         }
     }
 
@@ -121,32 +137,6 @@ class Program
             if (!node.Attributes.Contains("href"))
                 continue;
             string href = node.Attributes[name: "href"].Value;
-            if (!href.StartsWith("/wiki/") || href.Contains(':') || href.EndsWith("(identifier)"))
-                continue;
-
-            if (href.Contains('#'))
-                href = href.Split('#')[0];
-
-            links.Add(href);
-        }
-        return links;
-    }
-
-    private List<string> GetWikipediaLinksFromContentNode0(string url)
-    {
-        var doc = GetDocument(url);
-        HtmlNodeCollection nodes = doc.DocumentNode.SelectNodes("//a");
-        var links = new List<string>();
-        if (nodes == null)
-            return links;
-
-        //var baseUri = new Uri(uriString: url);
-        foreach (var node in nodes)
-        {
-            if (!node.Attributes.Contains("href"))
-                continue;
-            string href = node.Attributes[name: "href"].Value;
-            //links.Add(new Uri(baseUri, href).AbsoluteUri);
             if (!href.StartsWith("/wiki/") || href.Contains(':') || href.EndsWith("(identifier)"))
                 continue;
 
