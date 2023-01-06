@@ -48,7 +48,7 @@ class Program
 
         Console.WriteLine("Amount of pages: " + pages.Count);
         Console.WriteLine(GetDocument(baseUrl + pages[0]).Text);*/
-        CreateLinksAndWordsCollectionsFromPage("Dark triad", "Dark_triad", -1);
+        CreateLinksAndWordsCollectionsFromPage("Artificial_intelligence", "Artificial_intelligence", 200);
     }
 
     private void CreateLinksAndWordsCollectionsFromPage(string collectionName, string pageUrl, int maxPages = -1)
@@ -67,6 +67,7 @@ class Program
         Directory.CreateDirectory(linksFolder);
 
         var startPageLinksList = GetWikipediaLinksFromContentNode(startPageContentNode);
+        Console.WriteLine($"Amount of pages to be added to collection '{collectionName}': " + startPageLinksList.Count);
 
         int currentPageID = 0;
         foreach (var link in startPageLinksList)
@@ -76,6 +77,7 @@ class Program
             var links = GetWikipediaLinksFromContentNode(pageContentNode);
             string linksString = string.Join("\n", links);
             string filename = link.StartsWith("/wiki/") ? link.Substring("/wiki/".Length) : link;
+            Console.WriteLine($"Adding page {currentPageID} '{filename}'...");
             //filename = Regex.Replace(filename, "[^a-zA-Z0-9 _]", " ");
             File.WriteAllText(wordsFolder + '\\' + filename, wordsString);
             File.WriteAllText(linksFolder + '\\' + filename, linksString);
