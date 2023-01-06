@@ -29,7 +29,7 @@ class Program
         CalculatePageRank(20);
         //_pageDB.PrintContentsOfPages(new string[] { "Action_game" });
         var results = Query(
-            "java"
+            "java programming"
         //    "super mario"
         //    "hejaaaa waaaaah"
         );
@@ -44,7 +44,8 @@ class Program
             var fs = Math.Round(results[i].FinalScore, 2);
             var cs = Math.Round(results[i].ContentScore, 2);
             var ls = Math.Round(results[i].LocationScore, 2);
-            Console.WriteLine($"\t{i}. {results[i].Page.Url}\t\t\tFS:{fs}\tCS:{cs}\tLS:{ls}");
+            var prs = Math.Round(results[i].PageRankScore, 2);
+            Console.WriteLine($"\t{i}. {results[i].Page.Url}\t\t\tFS:{fs}\tCS:{cs}\tLS:{ls}\tPRS:{prs}");
         }
     }
 
@@ -53,13 +54,15 @@ class Program
         private Page _page;
         private double _contentScore;
         private double _locationScore;
+        private double _pageRankScore;
         private double _finalScore;
 
         public Page Page { get => _page; set => _page = value; }
         public double ContentScore { get => _contentScore; set => _contentScore = value; }
         public double LocationScore { get => _locationScore; set => _locationScore = value; }
-        public double PageRankScore => _page.PageRank;
+        public double PageRankScore { get => _pageRankScore; set => _pageRankScore = value; }
         public double FinalScore { get => _finalScore; set => _finalScore = value; }
+
         public PageWithScore(Page page)
         {
             _page = page;
@@ -99,6 +102,7 @@ class Program
         //var results = new List<Page>();
         var contentScores = new double[_pageDB.Pages.Count];
         var locationScores = new double[_pageDB.Pages.Count];
+        var pageRankScores = new double[_pageDB.Pages.Count];
         var results = new List<PageWithScore>();
         var queryWordInts = GetQueryAsWordInts(query);
 
@@ -108,11 +112,13 @@ class Program
             Page page = _pageDB.Pages[i];
             contentScores[i] = GetFrequencyScore(page, queryWordInts);
             locationScores[i] = GetLocationScore(page, queryWordInts);
+            pageRankScores[i] = page.PageRank;
         }
 
         // Normalize scores
         Normalize(contentScores, false);
         Normalize(locationScores, true);
+        Normalize(pageRankScores, false);
 
         // Generate results list
         for (int i = 0; i < _pageDB.Pages.Count; i++)
@@ -123,10 +129,11 @@ class Program
             var pageWithScore = new PageWithScore(page);
             pageWithScore.ContentScore = contentScores[i];
             pageWithScore.LocationScore = contentScores[i] > 0 ? 0.8 * locationScores[i] : 0;
+            pageWithScore.PageRankScore = pageRankScores[i] * 0.5;
             if (true)
-                pageWithScore.FinalScore = pageWithScore.ContentScore + pageWithScore.LocationScore + (0.5 * pageWithScore.PageRankScore);
+                pageWithScore.FinalScore = pageWithScore.ContentScore + pageWithScore.LocationScore + pageWithScore.PageRankScore;
             else
-                pageWithScore.FinalScore = pageWithScore.ContentScore + pageWithScore.LocationScore; ;
+                pageWithScore.FinalScore = pageWithScore.ContentScore + pageWithScore.LocationScore;
             results.Add(pageWithScore);
         }
 
@@ -325,7 +332,7 @@ class Program
             return dictionary;
         }
 
-        public bool HasLinkTo(Page p) => _links.Contains(p.Url);
+        public bool HasLinkTo(Page p) => _links.Contains("/wiki/" + p.Url);
     }
 
     void ReadDatasets(string nameOfDataset)
@@ -379,7 +386,7 @@ class Program
             var files = Directory.GetFiles(directory);
             foreach (var file in files)
             {
-                var page = new Page(Path.GetFileNameWithoutExtension(file), ReadBagOfWords(file));
+                var page = new Page(Path.GetFileName(file), ReadBagOfWords(file));
                 var linksFile = $"{PathGetDirectoryNameTimes(3, file)}\\Links\\"
                     + $"{Path.GetFileName(Path.GetDirectoryName(file))}\\{Path.GetFileName(file)}";
                 if (File.Exists(linksFile))
