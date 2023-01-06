@@ -21,6 +21,7 @@ class Program
     private HttpClient _httpClient;
     private int _pagesGathered = 0;
     private string _baseUrl = "https://en.wikipedia.org/";
+    private bool _useSearchEngineAPIDatasetsFolder = true;
 
     static void Main(string[] args)
     {
@@ -29,36 +30,27 @@ class Program
 
     public Program(string[] args)
     {
-        //var testdoc = GetDocument(baseUrl + "Dark_triad");
         _httpClient = new HttpClient();
-        /*var testContentNode = GetWikipediaContentNode(_baseUrl + "wiki/" + "Dark_triad");
-        Console.WriteLine(GetWordsFromContentNode(testContentNode));
-        var links = GetWikipediaLinksFromContentNode(testContentNode);
-        Console.WriteLine("Amount of links: " + links.Count);
-        foreach (var link in links)
-            Console.WriteLine(link);*/
-        
-        //Console.WriteLine($"{jObject["query"]["categorymembers"].ToString()}\n");
-        //Console.WriteLine($"{jsonResponse}\n");
-        /*_pagesGathered = 0;
-        var pages = GetCategoryPages(new List<string>(), "Category:Psychology", 2000, 1);
-        _pagesGathered = 0;
-        foreach (var page in pages)
-            Console.WriteLine(page);
-
-        Console.WriteLine("Amount of pages: " + pages.Count);
-        Console.WriteLine(GetDocument(baseUrl + pages[0]).Text);*/
         CreateLinksAndWordsCollectionsFromPage("Artificial_intelligence", "Artificial_intelligence", 200);
     }
 
     private void CreateLinksAndWordsCollectionsFromPage(string collectionName, string pageUrl, int maxPages = -1)
     {
+        // Get Content Node of the Wikipedia page to be used as starting point.
         var startPageContentNode = GetWikipediaContentNode(_baseUrl +"wiki/" + pageUrl);
         if (startPageContentNode == null)
             return;
 
-        var wordsFolder = appFolderPath + @$"\datasets\wikipedia\Words\" + collectionName;
-        var linksFolder = appFolderPath + @$"\datasets\wikipedia\Links\" + collectionName;
+        // Determine dataset folder to write to (console app's or directly to SearchEngineAPI).
+        string wikipediaFolder = _useSearchEngineAPIDatasetsFolder
+            ? Path.GetDirectoryName(appFolderPath) + @$"\SearchEngineAPI\datasets\wikipedia"
+            : appFolderPath + @$"\datasets\wikipedia";
+
+        // Determine Words and Links subfolder paths.
+        string wordsFolder = wikipediaFolder + @$"\Words\" + collectionName;
+        string linksFolder = wikipediaFolder + @$"\Links\" + collectionName;
+
+        // Create collection folders.
         if (Directory.Exists(wordsFolder))
             Directory.Delete(wordsFolder, true);
         Directory.CreateDirectory(wordsFolder);
@@ -66,25 +58,30 @@ class Program
             Directory.Delete(linksFolder, true);
         Directory.CreateDirectory(linksFolder);
 
+        // Extract list of links from the starting point page's Content Node.
         var startPageLinksList = GetWikipediaLinksFromContentNode(startPageContentNode);
-        Console.WriteLine($"Amount of pages to be added to collection '{collectionName}': " + startPageLinksList.Count);
 
-        int currentPageID = 0;
-        foreach (var link in startPageLinksList)
+        Console.WriteLine($"Amount of pages to be added to collection '{collectionName}': "
+            + (maxPages > -1 ? $"{maxPages} out of " : "")
+            + startPageLinksList.Count);
+
+        // Iterate links list, scrape pages and add Words and Links files to folders.
+        for (int i = 0; i < startPageLinksList.Count; i++)
         {
+            if (maxPages > -1 && i >= maxPages)
+                break;
+            string? link = startPageLinksList[i];
             var pageContentNode = GetWikipediaContentNode(_baseUrl + link);
             var wordsString = GetWordsFromContentNode(pageContentNode);
             var links = GetWikipediaLinksFromContentNode(pageContentNode);
             string linksString = string.Join("\n", links);
             string filename = link.StartsWith("/wiki/") ? link.Substring("/wiki/".Length) : link;
-            Console.WriteLine($"Adding page {currentPageID} '{filename}'...");
-            //filename = Regex.Replace(filename, "[^a-zA-Z0-9 _]", " ");
+            Console.WriteLine($"Adding page {i} '{filename}'...");
             File.WriteAllText(wordsFolder + '\\' + filename, wordsString);
             File.WriteAllText(linksFolder + '\\' + filename, linksString);
-            currentPageID++;
-            if (maxPages > -1 && currentPageID > maxPages)
-                break;
         }
+
+        Console.WriteLine($"Collection '{collectionName}' was successfully created.");
     }
 
     private string GetWordsFromContentNode(HtmlNode contentNode)

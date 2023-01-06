@@ -5,14 +5,15 @@ async function button0() {
     setSpinnerAndResultsTableVisibility(false)
     const responseJSON = await fetchPostRequest("./Search")
     removeChildren(resultsTable)
-    addRowToTable(resultsTable, ['Link', 'Score', 'Content', 'Location'], true)
+    addRowToTable(resultsTable, ['Link', 'Score', 'Content', 'Location', 'PageRank'], true)
     for (let i = 0; i < responseJSON.pages.length; i++) {
         const page = responseJSON.pages[i]
         addRowToTable(resultsTable, [
             page.pageName,
             page.finalScore.toFixed(2),
             page.contentScore.toFixed(2),
-            page.locationScore.toFixed(2)],
+            page.locationScore.toFixed(2),
+            page.pageRankScore.toFixed(2)],
             false)
     }
     resultsTable.removeAttribute('hidden')

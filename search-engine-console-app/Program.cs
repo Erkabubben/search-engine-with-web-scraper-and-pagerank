@@ -14,7 +14,6 @@ class Program
     }
 
     private static Program? _instance;
-    private Random _random;
     private PageDB _pageDB;
 
     static void Main(string[] args)
@@ -25,7 +24,6 @@ class Program
     public Program(string[] args)
     {
         ReadDatasets("wikipedia");
-        _random = new Random();
         CalculatePageRank(20);
         //_pageDB.PrintContentsOfPages(new string[] { "Action_game" });
         var results = Query(

@@ -5,7 +5,7 @@ using SearchEngineAPI.Models;
 
 namespace SearchEngineAPI.Services
 {
-    public partial class SearchEngineService
+    public class SearchEngineService
     {
         private static string appFolderPath = PathGetDirectoryNameTimes(4, AppDomain.CurrentDomain.BaseDirectory);
 
