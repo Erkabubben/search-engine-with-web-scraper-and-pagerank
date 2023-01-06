@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "D:\\Filarkivet\\Kurser\\2DV515 - Web Intelligence\\a3-search-engine\\SearchEngineAPI\\SearchEngineAPI.csproj": {}
+    "D:\\Filarkivet\\Kurser\\2DV515 - Web Intelligence\\project\\SearchEngineAPI\\SearchEngineAPI.csproj": {}
   },
   "projects": {
-    "D:\\Filarkivet\\Kurser\\2DV515 - Web Intelligence\\a3-search-engine\\SearchEngineAPI\\SearchEngineAPI.csproj": {
+    "D:\\Filarkivet\\Kurser\\2DV515 - Web Intelligence\\project\\SearchEngineAPI\\SearchEngineAPI.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\Filarkivet\\Kurser\\2DV515 - Web Intelligence\\a3-search-engine\\SearchEngineAPI\\SearchEngineAPI.csproj",
+        "projectUniqueName": "D:\\Filarkivet\\Kurser\\2DV515 - Web Intelligence\\project\\SearchEngineAPI\\SearchEngineAPI.csproj",
         "projectName": "SearchEngineAPI",
-        "projectPath": "D:\\Filarkivet\\Kurser\\2DV515 - Web Intelligence\\a3-search-engine\\SearchEngineAPI\\SearchEngineAPI.csproj",
+        "projectPath": "D:\\Filarkivet\\Kurser\\2DV515 - Web Intelligence\\project\\SearchEngineAPI\\SearchEngineAPI.csproj",
         "packagesPath": "C:\\Users\\MSI\\.nuget\\packages\\",
-        "outputPath": "D:\\Filarkivet\\Kurser\\2DV515 - Web Intelligence\\a3-search-engine\\SearchEngineAPI\\obj\\",
+        "outputPath": "D:\\Filarkivet\\Kurser\\2DV515 - Web Intelligence\\project\\SearchEngineAPI\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\MSI\\AppData\\Roaming\\NuGet\\NuGet.Config",

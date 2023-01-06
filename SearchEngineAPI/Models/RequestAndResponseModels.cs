@@ -15,11 +15,13 @@ namespace SearchEngineAPI.Models
             private string _pageName;
             private double _contentScore;
             private double _locationScore;
+            private double _pageRankScore;
             private double _finalScore;
 
             public string PageName { get => _pageName; set => _pageName = value; }
             public double ContentScore { get => _contentScore; set => _contentScore = value; }
             public double LocationScore { get => _locationScore; set => _locationScore = value; }
+            public double PageRankScore { get => _pageRankScore; set => _pageRankScore = value; }
             public double FinalScore { get => _finalScore; set => _finalScore = value; }
         }
 

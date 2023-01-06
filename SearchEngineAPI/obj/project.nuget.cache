@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "o5NT8n9RlOI7cLeuc2ajbEw/YwH8XS3bGJ9OV6xUgUh4r+s8jNpJprnb+CwUjUmG3zRvn6QuABibT0jfkqG5Kg==",
+  "dgSpecHash": "YsjeFHNfAmFOH/0lBsIJPe4iXsygH0DcRmWFINCNIpQWpShOkv0cYyYY9RvsPRcGsl0eDoxcNlHRInuafKxK1w==",
   "success": true,
-  "projectFilePath": "D:\\Filarkivet\\Kurser\\2DV515 - Web Intelligence\\a3-search-engine\\SearchEngineAPI\\SearchEngineAPI.csproj",
+  "projectFilePath": "D:\\Filarkivet\\Kurser\\2DV515 - Web Intelligence\\project\\SearchEngineAPI\\SearchEngineAPI.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\MSI\\.nuget\\packages\\microsoft.extensions.apidescription.server\\3.0.0\\microsoft.extensions.apidescription.server.3.0.0.nupkg.sha512",
     "C:\\Users\\MSI\\.nuget\\packages\\microsoft.openapi\\1.2.3\\microsoft.openapi.1.2.3.nupkg.sha512",

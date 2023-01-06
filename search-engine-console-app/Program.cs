@@ -29,9 +29,10 @@ class Program
         CalculatePageRank(20);
         //_pageDB.PrintContentsOfPages(new string[] { "Action_game" });
         var results = Query(
-            "java programming"
+        //    "java"
         //    "super mario"
-        //    "hejaaaa waaaaah"
+        "java programming"
+        //    "?????"
         );
         PrintSearchResults(results);
     }
@@ -97,7 +98,7 @@ class Program
         p.PageRank = 0.85 * pr + 0.15;
     }
 
-    private List<PageWithScore> Query(string query)
+    private List<PageWithScore> Query(string query, bool usePageRank = true)
     {
         //var results = new List<Page>();
         var contentScores = new double[_pageDB.Pages.Count];
@@ -124,13 +125,11 @@ class Program
         for (int i = 0; i < _pageDB.Pages.Count; i++)
         {
             Page page = _pageDB.Pages[i];
-            //var finalScore = contentScores[i];
-            //var finalScore = 1.0 * contentScores[i] + 0.5 * locationScores[i];
             var pageWithScore = new PageWithScore(page);
             pageWithScore.ContentScore = contentScores[i];
             pageWithScore.LocationScore = contentScores[i] > 0 ? 0.8 * locationScores[i] : 0;
             pageWithScore.PageRankScore = pageRankScores[i] * 0.5;
-            if (true)
+            if (usePageRank)
                 pageWithScore.FinalScore = pageWithScore.ContentScore + pageWithScore.LocationScore + pageWithScore.PageRankScore;
             else
                 pageWithScore.FinalScore = pageWithScore.ContentScore + pageWithScore.LocationScore;

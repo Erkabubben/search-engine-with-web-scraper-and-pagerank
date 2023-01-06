@@ -31,6 +31,7 @@ namespace SearchEngineAPI.Services
         public SearchEngineService(string nameOfDataset)
         {
             ReadDatasets(nameOfDataset);
+            CalculatePageRank(20);
         }
 
         /// <summary>
@@ -63,6 +64,7 @@ namespace SearchEngineAPI.Services
                 responsePage.PageName = pageWithScore.Page.Url;
                 responsePage.ContentScore = pageWithScore.ContentScore;
                 responsePage.LocationScore = pageWithScore.LocationScore;
+                responsePage.PageRankScore = pageWithScore.PageRankScore;
                 responsePage.FinalScore = pageWithScore.FinalScore;
                 responsePageList.Add(responsePage);
             }
@@ -93,11 +95,13 @@ namespace SearchEngineAPI.Services
             private Page _page;
             private double _contentScore;
             private double _locationScore;
+            private double _pageRankScore;
             private double _finalScore;
 
             public Page Page { get => _page; set => _page = value; }
             public double ContentScore { get => _contentScore; set => _contentScore = value; }
             public double LocationScore { get => _locationScore; set => _locationScore = value; }
+            public double PageRankScore { get => _pageRankScore; set => _pageRankScore = value; }
             public double FinalScore { get => _finalScore; set => _finalScore = value; }
             public PageWithScore(Page page)
             {
@@ -110,11 +114,12 @@ namespace SearchEngineAPI.Services
         /// </summary>
         /// <param name="query">The search query.</param>
         /// <returns>A PageWithScore list representing the results of the search.</returns>
-        private List<PageWithScore> Query(string query)
+        private List<PageWithScore> Query(string query, bool usePageRank = true)
         {
             //var results = new List<Page>();
             var contentScores = new double[_pageDB.Pages.Count];
             var locationScores = new double[_pageDB.Pages.Count];
+            var pageRankScores = new double[_pageDB.Pages.Count];
             var results = new List<PageWithScore>();
             var queryWordInts = GetQueryAsWordInts(query);
 
@@ -124,22 +129,26 @@ namespace SearchEngineAPI.Services
                 Page page = _pageDB.Pages[i];
                 contentScores[i] = GetFrequencyScore(page, queryWordInts);
                 locationScores[i] = GetLocationScore(page, queryWordInts);
+                pageRankScores[i] = page.PageRank;
             }
 
             // Normalize scores
             Normalize(contentScores, false);
             Normalize(locationScores, true);
+            Normalize(pageRankScores, false);
 
             // Generate results list
             for (int i = 0; i < _pageDB.Pages.Count; i++)
             {
                 Page page = _pageDB.Pages[i];
-                //var finalScore = contentScores[i];
-                //var finalScore = 1.0 * contentScores[i] + 0.5 * locationScores[i];
                 var pageWithScore = new PageWithScore(page);
                 pageWithScore.ContentScore = contentScores[i];
                 pageWithScore.LocationScore = contentScores[i] > 0 ? 0.8 * locationScores[i] : 0;
-                pageWithScore.FinalScore = pageWithScore.ContentScore + pageWithScore.LocationScore;
+                pageWithScore.PageRankScore = pageRankScores[i] * 0.5;
+                if (usePageRank)
+                    pageWithScore.FinalScore = pageWithScore.ContentScore + pageWithScore.LocationScore + pageWithScore.PageRankScore;
+                else
+                    pageWithScore.FinalScore = pageWithScore.ContentScore + pageWithScore.LocationScore;
                 results.Add(pageWithScore);
             }
 
@@ -239,6 +248,34 @@ namespace SearchEngineAPI.Services
             return score;
         }
 
+        private void CalculatePageRank(int maxIterations)
+        {
+            // Iterate over all pages for a number of iterations
+            for (int i = 0; i < maxIterations; i++)
+            {
+                foreach (var page in _pageDB.Pages)
+                {
+                    IteratePageRank(page);
+                }
+            }
+        }
+
+        private void IteratePageRank(Page p)
+        {
+            // Calculate PageRank value for a page
+            double pr = 0;
+            foreach (var po in _pageDB.Pages)
+            {
+                if (po.HasLinkTo(p))
+                {
+                    // Sum of all pages
+                    pr += po.PageRank / po.Links.Count;
+                }
+            }
+            // Calculate PR
+            p.PageRank = 0.85 * pr + 0.15;
+        }
+
         /// <summary>
         /// Converts a query string to an array of Word Ids.
         /// </summary>
@@ -326,9 +363,13 @@ namespace SearchEngineAPI.Services
             private string _url;
             private List<int> _words;
             private Dictionary<int, int> _wordFrequencies;
+            private List<string> _links;
+            private double _pageRank = 1.0;
             public string Url { get => _url; set => _url = value; }
             public List<int> Words { get => _words; set => _words = value; }
             public Dictionary<int, int> WordFrequencies { get => _wordFrequencies; set => _wordFrequencies = value; }
+            public List<string> Links { get => _links; set => _links = value; }
+            public double PageRank { get => _pageRank; set => _pageRank = value; }
 
             public Page(string url, List<int> words)
             {
@@ -349,6 +390,8 @@ namespace SearchEngineAPI.Services
                 }
                 return dictionary;
             }
+
+            public bool HasLinkTo(Page p) => _links.Contains("/wiki/" + p.Url);
         }
 
         /// <summary>
@@ -386,6 +429,18 @@ namespace SearchEngineAPI.Services
                 }
             }
 
+            List<string> ReadLinks(string linksFile)
+            {
+                using (var reader = new StreamReader(linksFile))
+                {
+                    var list = new List<string>();
+                    while (!reader.EndOfStream)
+                        list.Add(reader.ReadLine());
+
+                    return list;
+                }
+            }
+
             _pageDB = new PageDB();
 
             var wordsDirectories = Directory.GetDirectories(appFolderPath + @$"\datasets\{nameOfDataset}\Words");
@@ -394,9 +449,13 @@ namespace SearchEngineAPI.Services
                 var files = Directory.GetFiles(directory);
                 foreach (var file in files)
                 {
-                    _pageDB.Pages.Add(
-                        new Page(Path.GetFileNameWithoutExtension(file),
-                        ReadBagOfWords(file)));
+                    var page = new Page(Path.GetFileName(file), ReadBagOfWords(file));
+                    var linksFile = $"{PathGetDirectoryNameTimes(3, file)}\\Links\\"
+                        + $"{Path.GetFileName(Path.GetDirectoryName(file))}\\{Path.GetFileName(file)}";
+                    if (File.Exists(linksFile))
+                        page.Links = ReadLinks(linksFile);
+
+                    _pageDB.Pages.Add(page);
                 }
             }
         }
