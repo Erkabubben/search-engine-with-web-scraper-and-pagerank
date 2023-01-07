@@ -31,13 +31,13 @@ class Program
     public Program(string[] args)
     {
         _httpClient = new HttpClient();
-        CreateLinksAndWordsCollectionsFromPage("Artificial_intelligence", "Artificial_intelligence", 200);
+        CreateLinksAndWordsCollectionsFromPage("Artificial_intelligence", "Artificial_intelligence", 200).Wait();
     }
 
-    private void CreateLinksAndWordsCollectionsFromPage(string collectionName, string pageUrl, int maxPages = -1)
+    private async Task CreateLinksAndWordsCollectionsFromPage(string collectionName, string pageUrl, int maxPages = -1)
     {
         // Get Content Node of the Wikipedia page to be used as starting point.
-        var startPageContentNode = GetWikipediaContentNode(_baseUrl +"wiki/" + pageUrl);
+        var startPageContentNode = await GetWikipediaContentNodeAsync(_baseUrl + "wiki/" + pageUrl);
         if (startPageContentNode == null)
             return;
 
@@ -58,25 +58,63 @@ class Program
             Directory.Delete(linksFolder, true);
         Directory.CreateDirectory(linksFolder);
 
-        // Extract list of links from the starting point page's Content Node.
+        // Extract list of links from the starting point page's Content Node, trim list if larger than maxPages.
         var startPageLinksList = GetWikipediaLinksFromContentNode(startPageContentNode);
+        if (maxPages > -1)
+            startPageLinksList.RemoveRange(maxPages, startPageLinksList.Count - maxPages);
+        // Remove duplicate links.
+        startPageLinksList = startPageLinksList.Distinct().ToList();
 
-        Console.WriteLine($"Amount of pages to be added to collection '{collectionName}': "
-            + (maxPages > -1 ? $"{maxPages} out of " : "")
-            + startPageLinksList.Count);
+        Console.WriteLine($"Amount of pages to be added to collection '{collectionName}': {startPageLinksList.Count}");
 
-        // Iterate links list, scrape pages and add Words and Links files to folders.
+        // Iterate links list and scrape pages.
+        async Task<HtmlNode[]> WaitForAllGetRequestsToFinish(List<string> startPageLinksList)
+        {
+            int amountOfTasksFinished = 0;
+
+            async Task<HtmlNode> SendRequestAndPrintMessages(int i)
+            {
+                Console.WriteLine($"Requested page {i}: " + startPageLinksList[i]);
+                var node = await GetWikipediaContentNodeAsync(_baseUrl + startPageLinksList[i]);
+                if (node != null)
+                {
+                    amountOfTasksFinished++;
+                    Console.WriteLine(
+                        $"Success:({i})" + startPageLinksList[i] + $" ({amountOfTasksFinished} / { startPageLinksList.Count})");
+                }
+                else
+                    Console.WriteLine(
+                        $"Failure:({i})" + startPageLinksList[i] + $" ({amountOfTasksFinished} / { startPageLinksList.Count})");
+                return node;
+            }
+
+            var contentNodes = new HtmlNode[startPageLinksList.Count];
+            var tasks = new Task<HtmlNode>[startPageLinksList.Count];
+            
+            for (int i = 0; i < tasks.Length; i++)
+                tasks[i] = SendRequestAndPrintMessages(i);
+            Console.WriteLine($"Awaiting GET requests...");
+            await Task.WhenAll(tasks);
+            for (int i = 0; i < contentNodes.Length; i++)
+                contentNodes[i] = tasks[i].Result;
+
+            return contentNodes;
+        }
+
+        var contentNodes = await WaitForAllGetRequestsToFinish(startPageLinksList);
+
+        // Iterate content nodes of retrieved pages and add Words and Links files to folders.
         for (int i = 0; i < startPageLinksList.Count; i++)
         {
             if (maxPages > -1 && i >= maxPages)
                 break;
             string? link = startPageLinksList[i];
-            var pageContentNode = GetWikipediaContentNode(_baseUrl + link);
+            var pageContentNode = contentNodes[i];
             var wordsString = GetWordsFromContentNode(pageContentNode);
             var links = GetWikipediaLinksFromContentNode(pageContentNode);
             string linksString = string.Join("\n", links);
             string filename = link.StartsWith("/wiki/") ? link.Substring("/wiki/".Length) : link;
-            Console.WriteLine($"Adding page {i} '{filename}'...");
+            Console.WriteLine($"Creating Words and Links files for page {i}: {filename}");
             File.WriteAllText(wordsFolder + '\\' + filename, wordsString);
             File.WriteAllText(linksFolder + '\\' + filename, linksString);
         }
@@ -107,9 +145,9 @@ class Program
         return RemoveSpaces(sb.ToString());
     }
 
-    private HtmlNode GetWikipediaContentNode(string url)
+    private async Task<HtmlNode> GetWikipediaContentNodeAsync(string url)
     {
-        var doc = GetDocument(url);
+        var doc = await GetDocumentAsync(url);
         if (doc == null)
             return null;
 
@@ -117,7 +155,28 @@ class Program
         return nodes[0];
     }
 
-    private HtmlDocument GetDocument(string url)
+    private HtmlNode GetWikipediaContentNodeSync(string url)
+    {
+        var doc = GetDocumentSync(url);
+        if (doc == null)
+            return null;
+
+        HtmlNodeCollection nodes = doc.DocumentNode.SelectNodes("//body/div[@id='content']");
+        return nodes[0];
+    }
+
+    private async Task<HtmlDocument> GetDocumentAsync(string url)
+    {
+        HtmlWeb web = new HtmlWeb();
+        HttpResponseMessage response = await _httpClient.GetAsync(url);
+        response.EnsureSuccessStatusCode();
+        var html = await response.Content.ReadAsStringAsync();
+        var doc = new HtmlDocument();
+        doc.LoadHtml(html);
+        return doc;
+    }
+
+    private HtmlDocument GetDocumentSync(string url)
     {
         HtmlWeb web = new HtmlWeb();
         HtmlDocument doc = web.Load(url);
@@ -154,7 +213,7 @@ class Program
 
         var fullUri = $"https://en.wikipedia.org/w/api.php?action=query&list=categorymembers&cmtitle=" +
             $"{uri}&format=json&cmlimit=500&cmprop=title";
-        var jsonResponse = GetSync(fullUri);
+        var jsonResponse = GetJSONSync(fullUri);
         var jObject = JObject.Parse(jsonResponse);
         foreach (var page in jObject["query"]["categorymembers"])
         {
@@ -174,12 +233,19 @@ class Program
         return pagesList;
     }
 
-    private string GetSync(string uri)
+    private string GetJSONSync(string uri)
     {
-        Console.WriteLine($"GET: {uri}");
         HttpResponseMessage response = _httpClient.GetAsync(uri).Result;
         response.EnsureSuccessStatusCode();
         var jsonResponse = response.Content.ReadAsStringAsync().Result;
+        return jsonResponse;
+    }
+
+    private async Task<string> GetJSONAsync(string uri)
+    {
+        HttpResponseMessage response = await _httpClient.GetAsync(uri);
+        response.EnsureSuccessStatusCode();
+        var jsonResponse = await response.Content.ReadAsStringAsync();
         return jsonResponse;
     }
 }
