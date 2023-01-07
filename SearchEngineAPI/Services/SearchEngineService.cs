@@ -32,6 +32,7 @@ namespace SearchEngineAPI.Services
         {
             ReadDatasets(nameOfDataset);
             CalculatePageRank(20);
+            Console.WriteLine("Finished reading datasets and calculating PageRank scores.");
         }
 
         /// <summary>
@@ -66,7 +67,10 @@ namespace SearchEngineAPI.Services
                 responsePage.LocationScore = pageWithScore.LocationScore;
                 responsePage.PageRankScore = pageWithScore.PageRankScore;
                 responsePage.FinalScore = pageWithScore.FinalScore;
-                responsePageList.Add(responsePage);
+
+                // Ensure that results are not added only by PageRank score.
+                if (responsePage.ContentScore > 0 || responsePage.LocationScore > 0)
+                    responsePageList.Add(responsePage);
             }
             return new SearchResponse(responsePageList, maxAmount);
         }
@@ -113,6 +117,7 @@ namespace SearchEngineAPI.Services
         /// Initiates a search based on the provided query and returns the results as a PageWithScore list.
         /// </summary>
         /// <param name="query">The search query.</param>
+        /// <param name="usePageRank">Whether or not to use PageRank scores when determining the final scores.</param>
         /// <returns>A PageWithScore list representing the results of the search.</returns>
         private List<PageWithScore> Query(string query, bool usePageRank = true)
         {
@@ -248,18 +253,26 @@ namespace SearchEngineAPI.Services
             return score;
         }
 
+        /// <summary>
+        /// Calculates the PageRank scores of all pages in the pageDB collection. Will stop
+        /// after the given maximum number of iterations. Scores gets more accurate with each
+        /// iteration, so several iterations may be needed.
+        /// </summary>
+        /// <param name="maxIterations">The maximum number of iterations.</param>
         private void CalculatePageRank(int maxIterations)
         {
             // Iterate over all pages for a number of iterations
             for (int i = 0; i < maxIterations; i++)
             {
                 foreach (var page in _pageDB.Pages)
-                {
                     IteratePageRank(page);
-                }
             }
         }
 
+        /// <summary>
+        /// Calculates a page's PageRank value.
+        /// </summary>
+        /// <param name="p">A Page object.</param>
         private void IteratePageRank(Page p)
         {
             // Calculate PageRank value for a page

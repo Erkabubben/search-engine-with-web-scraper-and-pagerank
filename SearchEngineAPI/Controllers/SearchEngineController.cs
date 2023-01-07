@@ -13,11 +13,15 @@ namespace SearchEngineAPI.Controllers
         // a new controller is instantiated on a request. Find out how to register service with
         // the dependency injection system rather than storing it as a static!
         private static SearchEngineService _searchEngineService;
-
-        public SearchEngineController()
+        public static void SearchEngineServiceSetup()
         {
             if (_searchEngineService == null)
                 _searchEngineService = new SearchEngineService("wikipedia");
+        }
+
+        public SearchEngineController()
+        {
+            SearchEngineServiceSetup();
         }
 
         [HttpGet(Name = "Index")]

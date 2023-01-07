@@ -31,8 +31,8 @@ partial class Program
     public Program(string[] args)
     {
         _httpClient = new HttpClient();
-        CreateLinksAndWordsCollectionsFromPage("Artificial_intelligence", "Artificial_intelligence", 200)
-            .Wait();
+        //CreateLinksAndWordsCollectionsFromPage("Artificial_intelligence", "Artificial_intelligence", 200).Wait();
+        CreateLinksAndWordsCollectionsFromPage("South_Korea", "South_Korea", 200).Wait();
     }
 
     /// <summary>
