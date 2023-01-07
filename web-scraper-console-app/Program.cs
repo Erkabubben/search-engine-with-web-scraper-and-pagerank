@@ -6,7 +6,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Text.RegularExpressions;
 
-class Program
+partial class Program
 {
     private static string appFolderPath = PathGetDirectoryNameTimes(4, AppDomain.CurrentDomain.BaseDirectory);
 
@@ -31,9 +31,18 @@ class Program
     public Program(string[] args)
     {
         _httpClient = new HttpClient();
-        CreateLinksAndWordsCollectionsFromPage("Artificial_intelligence", "Artificial_intelligence", 200).Wait();
+        CreateLinksAndWordsCollectionsFromPage("Artificial_intelligence", "Artificial_intelligence", 200)
+            .Wait();
     }
 
+    /// <summary>
+    /// First takes the URL of a Wikipedia page to use as a starting point and scrapes links from it, then scrapes
+    /// the pages of all those links and stores the contents as Words and Links files for a search engine.
+    /// </summary>
+    /// <param name="collectionName">The name of the new collection folders to be created.</param>
+    /// <param name="pageUrl">The Url of the starting point page.</param>
+    /// <param name="maxPages">The maximum amount of pages to be scraped (optional).</param>
+    /// <returns>A Task.</returns>
     private async Task CreateLinksAndWordsCollectionsFromPage(string collectionName, string pageUrl, int maxPages = -1)
     {
         // Get Content Node of the Wikipedia page to be used as starting point.
@@ -60,10 +69,10 @@ class Program
 
         // Extract list of links from the starting point page's Content Node, trim list if larger than maxPages.
         var startPageLinksList = GetWikipediaLinksFromContentNode(startPageContentNode);
-        if (maxPages > -1)
-            startPageLinksList.RemoveRange(maxPages, startPageLinksList.Count - maxPages);
         // Remove duplicate links.
         startPageLinksList = startPageLinksList.Distinct().ToList();
+        if (maxPages > -1 && maxPages < startPageLinksList.Count)
+            startPageLinksList.RemoveRange(maxPages, startPageLinksList.Count - maxPages);
 
         Console.WriteLine($"Amount of pages to be added to collection '{collectionName}': {startPageLinksList.Count}");
 
@@ -122,6 +131,11 @@ class Program
         Console.WriteLine($"Collection '{collectionName}' was successfully created.");
     }
 
+    /// <summary>
+    /// Takes a Wikipedia page's Content node and returns its text content as Words file data.
+    /// </summary>
+    /// <param name="contentNode">A Wikipedia page's Content node.</param>
+    /// <returns>A string of Words file data.</returns>
     private string GetWordsFromContentNode(HtmlNode contentNode)
     {
         string RemoveSpaces(string text) => Regex.Replace(text, @"\s+", " ");
@@ -145,6 +159,12 @@ class Program
         return RemoveSpaces(sb.ToString());
     }
 
+    /// <summary>
+    /// Asynchronously sends a GET request for a Wikipedia page and returns its Content node if the
+    /// request succeeds.
+    /// </summary>
+    /// <param name="url">The Url of a Wikipedia page.</param>
+    /// <returns>A Task that resolves into a Wikipedia page's Content node.</returns>
     private async Task<HtmlNode> GetWikipediaContentNodeAsync(string url)
     {
         var doc = await GetDocumentAsync(url);
@@ -155,6 +175,12 @@ class Program
         return nodes[0];
     }
 
+    /// <summary>
+    /// Synchronously sends a GET request for a Wikipedia page and returns its Content node if the
+    /// request succeeds.
+    /// </summary>
+    /// <param name="url">The Url of a Wikipedia page.</param>
+    /// <returns>A Wikipedia page's Content node.</returns>
     private HtmlNode GetWikipediaContentNodeSync(string url)
     {
         var doc = GetDocumentSync(url);
@@ -165,6 +191,11 @@ class Program
         return nodes[0];
     }
 
+    /// <summary>
+    /// Asynchronously sends a GET request for a Wikipedia page and returns it as an HtmlDocument.
+    /// </summary>
+    /// <param name="url">The Url of a Wikipedia page.</param>
+    /// <returns>A Task that resolves into an HtmlDocument.</returns>
     private async Task<HtmlDocument> GetDocumentAsync(string url)
     {
         HtmlWeb web = new HtmlWeb();
@@ -176,6 +207,11 @@ class Program
         return doc;
     }
 
+    /// <summary>
+    /// Synchronously sends a GET request for a Wikipedia page and returns it as an HtmlDocument.
+    /// </summary>
+    /// <param name="url">The Url of a Wikipedia page.</param>
+    /// <returns>An HtmlDocument.</returns>
     private HtmlDocument GetDocumentSync(string url)
     {
         HtmlWeb web = new HtmlWeb();
@@ -183,6 +219,11 @@ class Program
         return doc;
     }
 
+    /// <summary>
+    /// Extracts all links from a Wikipedia page's Content node and returns them as a list of strings.
+    /// </summary>
+    /// <param name="contentNode">A Wikipedia page's Content node.</param>
+    /// <returns>A list of strings.</returns>
     private List<string> GetWikipediaLinksFromContentNode(HtmlNode contentNode)
     {
         var nodes = contentNode.SelectNodes("//a");
@@ -204,48 +245,5 @@ class Program
             links.Add(href);
         }
         return links;
-    }
-
-    private List<string> GetWikipediaCategoryPages(List<string> pagesList, string uri, int maxPages = 1000, int depth = 1)
-    {
-        if (_pagesGathered >= maxPages)
-            return pagesList;
-
-        var fullUri = $"https://en.wikipedia.org/w/api.php?action=query&list=categorymembers&cmtitle=" +
-            $"{uri}&format=json&cmlimit=500&cmprop=title";
-        var jsonResponse = GetJSONSync(fullUri);
-        var jObject = JObject.Parse(jsonResponse);
-        foreach (var page in jObject["query"]["categorymembers"])
-        {
-            string pageTitle = (string)page["title"];
-            if (!pageTitle.StartsWith("Category:")
-                && !pageTitle.StartsWith("Portal:"))
-            {
-                if (_pagesGathered >= maxPages)
-                    return pagesList;
-
-                pagesList.Add(pageTitle);
-                _pagesGathered++;
-            }
-            else if (pageTitle.StartsWith("Category:") && depth > 0)
-                GetWikipediaCategoryPages(pagesList, pageTitle, maxPages, depth - 1);
-        }
-        return pagesList;
-    }
-
-    private string GetJSONSync(string uri)
-    {
-        HttpResponseMessage response = _httpClient.GetAsync(uri).Result;
-        response.EnsureSuccessStatusCode();
-        var jsonResponse = response.Content.ReadAsStringAsync().Result;
-        return jsonResponse;
-    }
-
-    private async Task<string> GetJSONAsync(string uri)
-    {
-        HttpResponseMessage response = await _httpClient.GetAsync(uri);
-        response.EnsureSuccessStatusCode();
-        var jsonResponse = await response.Content.ReadAsStringAsync();
-        return jsonResponse;
     }
 }
